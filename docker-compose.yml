@@ -1,0 +1,36 @@
+version: "3.8"
+
+
+x-database: &database
+  POSTGRES_DB: "hakaton"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "crazyadmin228"
+
+
+services:
+  postgres:
+    image: postgres:latest
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      <<: *database
+    ports:
+      - "5432:5432"
+
+  web:
+    build:
+      context: "./webapp"
+      dockerfile: "Dockerfile"
+    restart: always
+    ports:
+      - "8888:8888"
+    environment:
+      <<: *database
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
