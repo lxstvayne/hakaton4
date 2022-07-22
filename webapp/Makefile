@@ -1,5 +1,5 @@
 export POSTGRES_DB=hakaton
-export POSTGRES_HOST=195.2.76.179
+export POSTGRES_HOST=s1.letsbot.ru
 export POSTGRES_PORT=5432
 export POSTGRES_USER=postgres
 export POSTGRES_PASSWORD=crazyadmin228
