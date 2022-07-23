@@ -1,8 +1,7 @@
 import requests
+from bs4 import BeautifulSoup
 
 from api import models
-
-from bs4 import BeautifulSoup
 
 
 def parse_complexes():
@@ -138,8 +137,7 @@ def fill_db():
 
                             for room in complex_rooms:
                                 if int(room['floor']) == floor_instance.number and room[
-                                    'liter'] == f'Литер {liter["number"]}' and room['object'][
-                                    'name'] == complex_instance.name:
+                                    'liter'] == f'Литер {liter["number"]}' and room['object']['name'] == complex_instance.name:
                                     if models.Room.objects.filter(id=int(room['id'])).count():
                                         continue
 
@@ -160,26 +158,9 @@ def fill_db():
 
 
 def fill_commerce():
-    data = parse_complexes()
-
-    for city in data['cityList']:
-        for district in city['districts']:
-            if district['name'] == "Любой":
-                continue
-
-            for complex in district['complexes']:
-                for commercial in complex['types']:
-                    room_id = int(commercial['id'])
-                    name = commercial['name']
-
-                    commercial_instance, created = models.Commercial.objects.get_or_create(name=name)
-
-                    if not models.Room.objects.filter(id=room_id).count():
-                        continue
-                    print(commercial_instance)
-                    room = models.Room.objects.get(id=room_id)
-                    room.commercial = commercial_instance
-                    room.save()
+    com = [el.commercial.name for el in models.CommercialRecommendationsRatings.objects.all().distinct("commercial")]
+    for commercial in com:
+        models.Commercial.objects.get_or_create(name=commercial)
 
 
 def get_starts_count(html):
@@ -244,4 +225,11 @@ def parse_complexes_ratings():
 
         for el in ratings_val:
             print(complex_instance.name, el['title'], el['sector'])
-            models.CommercialRecommendationsRatings.objects.get_or_create(**el, complex=complex_instance)
+            commercial, created = models.Commercial.objects.get_or_create(name=el.pop('title'))
+            models.CommercialRecommendationsRatings.objects.get_or_create(complex=complex_instance,
+                                                                          commercial=commercial,
+                                                                          welfare_score=el['welfare_score'],
+                                                                          traffic_score=el['traffic_score'],
+                                                                          competitors_score=el['competitors_score'],
+                                                                          population_score=el['population_score'],
+                                                                          sector=el['sector'])

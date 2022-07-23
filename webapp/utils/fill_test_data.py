@@ -42,7 +42,7 @@ def random_date(start, end):
 
 
 def fill_commercial_rooms():
-    commercial_types = list(models.Commercial.objects.all())
+    commercial_types = [el.commercial.name for el in models.CommercialRecommendationsRatings.objects.all().distinct("commercial")]
     client_list = list(models.Client.objects.all())
     statuses = ("Продано", "Арендуется")
 
@@ -53,6 +53,7 @@ def fill_commercial_rooms():
         if rand_val > 0.4:
             rand_client = random.choice(client_list)
             commercial_type = random.choice(commercial_types)
+            commercial_instance = models.Commercial.objects.get(name=commercial_type)
             status = random.choice(statuses)
             date = random_date(datetime.datetime(2021, 1, 1), datetime.datetime(2022, 1, 1)).date()
             price_per_month = None
@@ -61,7 +62,7 @@ def fill_commercial_rooms():
 
             models.ClientRoom.objects.create(room=room,
                                              client=rand_client,
-                                             commercial_type=commercial_type,
+                                             commercial_type=commercial_instance,
                                              status=status,
                                              price_per_month=price_per_month,
                                              created_at=date)

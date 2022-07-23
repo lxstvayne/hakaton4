@@ -21,7 +21,8 @@ class RoomListFilter(filters.FilterSet):
 
 class CommercialRecommendationsRatingsFilter(filters.FilterSet):
     complex = filters.CharFilter('complex__name')
+    name = filters.CharFilter('commercial__name')
 
     class Meta:
         model = models.CommercialRecommendationsRatings
-        fields = ["title"]
+        fields = []

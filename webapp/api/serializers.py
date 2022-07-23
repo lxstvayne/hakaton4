@@ -92,8 +92,9 @@ class ClientRoomSerializer(serializers.ModelSerializer):
 
 class CommercialRecommendationsRatingsSerializer(serializers.ModelSerializer):
     complex = serializers.CharField(source="complex.name")
+    commercial = serializers.CharField(source="commercial.name")
 
     class Meta:
         model = models.CommercialRecommendationsRatings
-        fields = ("title", "welfare_score", "traffic_score", "competitors_score", "population_score",
+        fields = ("commercial", "welfare_score", "traffic_score", "competitors_score", "population_score",
                   "sector", "complex")
