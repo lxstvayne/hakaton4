@@ -137,7 +137,9 @@ def fill_db():
                             #                                   d=path['d'])
 
                             for room in complex_rooms:
-                                if int(room['floor']) == floor_instance.number and room['liter'] == f'Литер {liter["number"]}' and room['object']['name'] == complex_instance.name:
+                                if int(room['floor']) == floor_instance.number and room[
+                                    'liter'] == f'Литер {liter["number"]}' and room['object'][
+                                    'name'] == complex_instance.name:
                                     if models.Room.objects.filter(id=int(room['id'])).count():
                                         continue
 
@@ -153,4 +155,93 @@ def fill_db():
                                                                                                    'price'].replace(
                                                                                                    " ", "")),
                                                                                                name=room['name'],
-                                                                                               area=float(room['area']))
+                                                                                               area=float(room['area']),
+                                                                                               plan=f"https://ask-yug.com{room['plan']}")
+
+
+def fill_commerce():
+    data = parse_complexes()
+
+    for city in data['cityList']:
+        for district in city['districts']:
+            if district['name'] == "Любой":
+                continue
+
+            for complex in district['complexes']:
+                for commercial in complex['types']:
+                    room_id = int(commercial['id'])
+                    name = commercial['name']
+
+                    commercial_instance, created = models.Commercial.objects.get_or_create(name=name)
+
+                    if not models.Room.objects.filter(id=room_id).count():
+                        continue
+                    print(commercial_instance)
+                    room = models.Room.objects.get(id=room_id)
+                    room.commercial = commercial_instance
+                    room.save()
+
+
+def get_starts_count(html):
+    soup = BeautifulSoup(html, 'lxml')
+
+    els = soup.findAll('span', class_='fa fa-star cst')
+
+    return len(els)
+
+
+def parse_point_ratings(lat, long):
+    cookies = "_ym_d=1658499011; _ym_uid=16584990111027789945; sw_t=on; sw_p=on; sw_c=on; tmr_lvid=1fe4a3058cf42a952d32ffb91032fe56; tmr_lvidTS=1658499012240; _ga=GA1.2.750144860.1658499012; _gid=GA1.2.549039303.1658499012; rubric=41175; city=16; _ym_isad=1; _ym_visorc=w; _gat_gtag_UA_76109420_7=1; session=XNZILaSbtro6UP5U; tmr_detect=1%7C1658573433110; tmr_reqNum=55"
+
+    cookie_dict = {}
+    for cook in cookies.split(';'):
+        k, v = cook.split('=')
+        cookie_dict[k] = v.rstrip()
+
+    url = "https://mestomer.com/rubrics2.pl"
+
+    r = requests.get(url, cookies=cookie_dict).json()['data']
+
+    res = []
+
+    for rub in r['rubrics']:
+        rub_id = rub['id']
+        title = rub['title']
+        sector = rub['sector']
+
+        url = f"https://mestomer.com/point.pl?rubric={rub_id}&lat={lat}&lon={long}"
+        r = requests.get(url, cookies=cookie_dict)
+
+        json = r.json()['data']
+        res.append(dict(
+            title=title,
+            sector=sector,
+            welfare_score=get_starts_count(json['welfare_score']),
+            traffic_score=get_starts_count(json['traffic_score']),
+            competitors_score=get_starts_count(json['competitors_score']),
+            population_score=get_starts_count(json['population_score'])
+        ))
+
+    return res
+
+
+def parse_complexes_ratings():
+    complexes = {
+        "ЖК «Спортивный Парк»": "45.0463758,39.1093058",
+        "ЖК «Смородина»": "45.0576479,39.1042724",
+        "ЖК Fresh": "44.9914608,39.0693023",
+        "ЖК AVrorA": "45.0656666,38.9715475",
+        "ЖК URAL": "45.0374855,39.0703733",
+        "ЖК Novella": "45.1013298,38.9553605"
+    }
+
+    for k, v in complexes.items():
+        complex_instance = models.Complex.objects.get(name=k)
+
+        lat, lon = v.split(',')
+
+        ratings_val = parse_point_ratings(lat, lon)
+
+        for el in ratings_val:
+            print(complex_instance.name, el['title'], el['sector'])
+            models.CommercialRecommendationsRatings.objects.get_or_create(**el, complex=complex_instance)

@@ -18,12 +18,18 @@ class UserManager(BaseUserManager):
     же самого кода, который Django использовал для создания User (для демонстрации).
     """
 
-    def create_user(self, username, password=None):
+    def create_user(self, username, password=None, first_name=None, last_name=None):
         """ Создает и возвращает пользователя с имэйлом, паролем и именем. """
         if username is None:
             raise TypeError('Users must have a username.')
 
-        user = self.model(username=username)
+        if first_name is None:
+            raise TypeError("Users must have a first_name")
+
+        if last_name is None:
+            raise TypeError("Users must have a last_name")
+
+        user = self.model(username=username, first_name=first_name, last_name=last_name)
         user.set_password(password)
         user.save()
 
@@ -48,6 +54,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     # интерфейсе. Мы так же проиндексируем этот столбец в базе данных для
     # повышения скорости поиска в дальнейшем.
     username = models.CharField(db_index=True, max_length=255, unique=True)
+
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
 
     # Когда пользователь более не желает пользоваться нашей системой, он может
     # захотеть удалить свой аккаунт. Для нас это проблема, так как собираемые
